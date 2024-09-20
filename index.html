@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Sharing Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f4f4f9;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        div, table {
+            margin: auto;
+            width: 80%;
+        }
+        table {
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+            transition: background-color 0.3s ease;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+        .button-add {
+            background-color: #007bff;
+        }
+        .button-add:hover {
+            background-color: #0056b3;
+        }
+        .button-delete {
+            background-color: #dc3545;
+        }
+        .button-delete:hover {
+            background-color: #c82333;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e7e7e7;
+        }
+        .summary-item {
+            animation: fadeIn 1s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            margin-right: 10px;
+        }
+        .capture-container {
+            margin: 20px auto;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Expense Sharing Calculator</h2>
+
+<div class="input-group">
+    <label for="billName">Bill Name:</label>
+    <input type="text" id="billName" placeholder="Enter bill name">
+    <label for="paidBy">Paid By:</label>
+    <select id="paidBy">
+        <option value="">Select</option>
+        <option value="nandini">Nandini</option>
+        <option value="nandita">Nandita</option>
+        <option value="netra">Netra</option>
+        <option value="rohitha">Rohitha</option>
+        <option value="vrushali">Vrushali</option>
+        <option value="mayura">Mayura</option>
+    </select>
+    <label for="billDate">Date:</label>
+    <input type="date" id="billDate">
+</div>
+
+<!-- New Member Input -->
+<div class="input-group">
+    <label for="newMemberName">Add New Member:</label>
+    <input type="text" id="newMemberName" placeholder="Enter new member's name">
+    <button class="button button-add" onclick="addNewMember()">Add Member</button>
+</div>
+
+<!-- Remove Member Input -->
+<div class="input-group">
+    <label for="removeMemberName">Remove Member:</label>
+    <select id="removeMemberName">
+        <!-- Options will be populated dynamically -->
+    </select>
+    <button class="button button-delete" onclick="removeMember()">Remove Member</button>
+</div>
+
+<table id="expenseTable">
+    <thead>
+        <tr id="headerRow">
+            <th>Item</th>
+            <th>Price</th>
+            <th>Nandini</th>
+            <th>Nandita</th>
+            <th>Netra</th>
+            <th>Rohitha</th>
+            <th>Vrushali</th>
+            <th>Mayura</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Rows will be added here -->
+        <tr id="totalRow" class="total-row">
+            <td colspan="9">Total Amounts:</td>
+        </tr>
+    </tbody>
+</table>
+
+<button class="button button-add" onclick="addItem()">Add Item</button>
+<button class="button button-add" onclick="calculateShare()">Calculate Shares</button>
+<button class="button button-delete" onclick="resetCalculator()">Reset</button>
+
+<h3>Summary:</h3>
+<ul id="summaryList">
+    <!-- Summary will be populated here -->
+</ul>
+
+<script>
+    let billName = '';
+    let paidBy = '';
+    let billDate = '';
+    let members = ['nandini', 'nandita', 'netra', 'rohitha', 'vrushali', 'mayura'];
+
+    function calculateShare() {
+        let totals = {};
+        let paidByTotals = {};
+
+        members.forEach(member => {
+            totals[member] = 0;
+            paidByTotals[member] = 0;
+        });
+
+        const rows = document.querySelectorAll("#expenseTable tbody tr:not(#totalRow)");
+        rows.forEach(row => {
+            const price = parseFloat(row.cells[1].querySelector("input").value) || 0;
+            const peopleSharing = [];
+
+            members.forEach((member, index) => {
+                if (row.cells[index + 2].querySelector("input").checked) peopleSharing.push(member);
+            });
+
+            const share = peopleSharing.length ? price / peopleSharing.length : 0;
+
+            peopleSharing.forEach(person => {
+                totals[person] += share;
+            });
+
+            if (paidBy) {
+                paidByTotals[paidBy] += price;
+            }
+        });
+
+        updateSummary(paidByTotals, totals);
+    }
+
+    function updateSummary(paidByTotals, totals) {
+        const summaryList = document.getElementById("summaryList");
+        summaryList.innerHTML = ''; // Clear previous summary
+
+        if (billName && paidBy && billDate) {
+            summaryList.innerHTML += `<li class="summary-item">${paidBy.charAt(0).toUpperCase() + paidBy.slice(1)} paid for ${billName} on ${billDate}</li>`;
+        }
+
+        let oweToWhom = [];
+        members.forEach(payer => {
+            members.forEach(receiver => {
+                if (payer !== receiver) {
+                    const payerOwes = totals[payer] - paidByTotals[payer];
+                    const receiverOwes = paidByTotals[receiver] - totals[receiver];
+                    if (payerOwes > 0 && receiverOwes > 0) {
+                        const amount = Math.min(payerOwes, receiverOwes);
+                        if (amount > 0) {
+                            oweToWhom.push(`${payer.charAt(0).toUpperCase() + payer.slice(1)} owes ${receiver.charAt(0).toUpperCase() + receiver.slice(1)} $${amount.toFixed(2)}`);
+                        }
+                    }
+                }
+            });
+        });
+
+        if (oweToWhom.length > 0) {
+            summaryList.innerHTML += `<h4 class="summary-item">Owes To Whom:</h4><ul>${oweToWhom.map(item => `<li class="summary-item">${item}</li>`).join('')}</ul>`;
+        }
+    }
+
+    function addItem() {
+        billName = document.getElementById("billName").value;
+        paidBy = document.getElementById("paidBy").value;
+        billDate = document.getElementById("billDate").value;
+
+        const table = document.getElementById("expenseTable").getElementsByTagName("tbody")[0];
+        const newRow = document.createElement("tr");
+
+        let newRowContent = `
+            <td><input type="text" placeholder="Item Name"></td>
+            <td><input type="number" step="0.01" placeholder="0.00"></td>
+        `;
+
+        members.forEach(() => {
+            newRowContent += `<td><input type="checkbox"></td>`;
+        });
+
+        newRowContent += `<td><button class="button button-delete" onclick="deleteRow(this)">Delete</button></td>`;
+
+        newRow.innerHTML = newRowContent;
+
+        const totalRow = document.getElementById("totalRow");
+        table.insertBefore(newRow, totalRow);
+    }
+
+    function deleteRow(button) {
+        const row = button.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+    }
+
+    function resetCalculator() {
+        document.getElementById("expenseTable").getElementsByTagName("tbody")[0].innerHTML = `
+            <tr id="totalRow" class="total-row">
+                <td colspan="${members.length + 3}">Total Amounts:</td>
+            </tr>
+        `;
+
+        document.getElementById("summaryList").innerHTML = '';
+        document.getElementById("billName").value = '';
+        document.getElementById("paidBy").value = '';
+        document.getElementById("billDate").value = '';
+    }
+
+    function addNewMember() {
+        const newMemberName = document.getElementById("newMemberName").value.trim().toLowerCase();
+        if (newMemberName && !members.includes(newMemberName)) {
+            members.push(newMemberName);
+            updateTableForNewMember(newMemberName);
+            updateRemoveMemberOptions();
+        }
+    }
+
+    function removeMember() {
+        const removeMemberName = document.getElementById("removeMemberName").value;
+        if (removeMemberName && members.includes(removeMemberName)) {
+            members = members.filter(member => member !== removeMemberName);
+            updateTableForRemovedMember(removeMemberName);
+            updateRemoveMemberOptions();
+        }
+    }
+
+    function updateTableForNewMember(newMemberName) {
+        const headerRow = document.getElementById("headerRow");
+        const newHeader = document.createElement("th");
+        newHeader.innerText = newMemberName.charAt(0).toUpperCase() + newMemberName.slice(1);
+        headerRow.insertBefore(newHeader, headerRow.lastElementChild);
+
+        const rows = document.querySelectorAll("#expenseTable tbody tr:not(#totalRow)");
+        rows.forEach(row => {
+            const newCell = document.createElement("td");
+            newCell.innerHTML = '<input type="checkbox">';
+            row.insertBefore(newCell, row.lastElementChild);
+        });
+    }
+
+    function updateTableForRemovedMember(removeMemberName) {
+        const headerRow = document.getElementById("headerRow");
+        const headerIndex = Array.from(headerRow.children).findIndex(th => th.innerText.toLowerCase() === removeMemberName);
+
+        if (headerIndex > -1) {
+            headerRow.deleteCell(headerIndex);
+            const rows = document.querySelectorAll("#expenseTable tbody tr:not(#totalRow)");
+            rows.forEach(row => {
+                row.deleteCell(headerIndex);
+            });
+        }
+    }
+
+    function updateRemoveMemberOptions() {
+        const removeMemberSelect = document.getElementById("removeMemberName");
+        removeMemberSelect.innerHTML = '';
+
+        members.forEach(member => {
+            const option = document.createElement("option");
+            option.value = member;
+            option.innerText = member.charAt(0).toUpperCase() + member.slice(1);
+            removeMemberSelect.appendChild(option);
+        });
+    }
+
+    window.onload = function() {
+        updateRemoveMemberOptions();
+    };
+</script>
+
+</body>
+</html>
